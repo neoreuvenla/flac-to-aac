@@ -76,9 +76,30 @@ def convert_flac_to_aac(src_folder, dest_folder):
         list(tqdm(executor.map(convert_file_wrapper, args_list), total=len(args_list), unit="file"))
 
 if __name__ == "__main__":
-    print("FLAC to AAC Converter")
-    src_folder = input("Please enter the source folder path containing FLAC files: ")
-    dest_folder = input("Please enter the destination folder path for AAC files: ")
+
+    # Add some spacing for readability
+    print("\n")
+
+    # Use a border for the title
+    print("+" + "-"*80 + "+")
+    print("|" + "FLAC TO AAC CONVERTER".center(80) + "|")
+    print("|" + " "*80 + "|")
+    print("|" + "Convert lossless FLAC files into AAC files for mobile music playback".center(80) + "|")
+    print("+" + "-"*80 + "+")
+    print("|" + "This program will recursively search through the specified directory, locating".center(80) + "|")
+    print("|" + "all FLAC files and converting them into the AAC format at a 256 kbps bit rate.".center(80) + "|")
+    print("|" + "All directory structures, meta data, and album art will be preserved".center(80) + "|")
+    print("+" + "-"*80 + "+")
+    
+    # Add some spacing for readability
+    print("\n")
+    
+    # Prompt the user for folder paths
+    src_folder = input("| Enter source path, eg ~/Music/FLAC:\t  ")
+    dest_folder = input("| Enter destination path, eg ~/Music/AAC: ")
+    
+    # Add some spacing for readability
+    print("\n")
 
     # Expanding the '~' character for both src_folder and dest_folder
     src_folder = os.path.expanduser(src_folder)
@@ -86,8 +107,8 @@ if __name__ == "__main__":
 
     # Check if the expanded src_folder is a valid directory
     if not os.path.isdir(src_folder):
-        logging.error(f"'{src_folder}' is not a valid directory.")
-        print(f"'{src_folder}' is not a valid directory. Exiting.")
+        logging.error(f"| '{src_folder}' is not a valid directory.")
+        print(f"| '{src_folder}' is not a valid directory. Exiting.")
         exit(1)
 
     convert_flac_to_aac(src_folder, dest_folder)
