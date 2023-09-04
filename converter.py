@@ -9,6 +9,22 @@ logging.basicConfig(filename="conversion.log", level=logging.INFO,
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
 
+#def convert_flac_to_aac_direct(src_file, dest_file):
+#    command = [
+#        'ffmpeg',
+#        '-i', src_file,
+#        '-vn',  # Exclude video streams
+#        '-c:a', 'aac',
+#        '-b:a', '256k',
+#        dest_file
+#    ]
+#    try:
+#        subprocess.run(command, check=True)
+#        logging.info(f"Successfully converted {src_file} to {dest_file}.")
+#    except subprocess.CalledProcessError as e:
+#        logging.error(f"Failed to convert {src_file}. Reason: {e}")
+#        print(f"\nFailed to convert {src_file}. Check the log for details.")
+
 def convert_flac_to_aac_direct(src_file, dest_file):
     command = [
         'ffmpeg',
@@ -16,6 +32,18 @@ def convert_flac_to_aac_direct(src_file, dest_file):
         '-vn',  # Exclude video streams
         '-c:a', 'aac',
         '-b:a', '256k',
+        
+        # Metadata fields to drop
+        '-metadata', 'album_artist=',
+        '-metadata', 'genre=',
+        '-metadata', 'comment=',
+        '-metadata', 'composer=',
+        '-metadata', 'original_artist=',
+        '-metadata', 'copyright=',
+        '-metadata', 'url=',
+        '-metadata', 'encoded_by=',
+        '-metadata', 'lyrics=',
+        
         dest_file
     ]
     try:
