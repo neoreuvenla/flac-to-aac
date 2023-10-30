@@ -8,24 +8,44 @@ from concurrent.futures import ProcessPoolExecutor
 logging.basicConfig(filename="conversion.log", level=logging.INFO, 
                     format='%(asctime)s - %(levelname)s - %(message)s')
 
+def extract_album_art(src_file, dest_dir):
+    # Define the destination path for the album art
+    art_file = os.path.join(dest_dir, 'cover.jpg')
+    
+    # Extract using metaflac
+    extract_command = [
+        'metaflac',
+        '--export-picture-to=' + art_file,
+        src_file
+    ]
 
-#def convert_flac_to_aac_direct(src_file, dest_file):
-#    command = [
-#        'ffmpeg',
-#        '-i', src_file,
-#        '-vn',  # Exclude video streams
-#        '-c:a', 'aac',
-#        '-b:a', '256k',
-#        dest_file
-#    ]
-#    try:
-#        subprocess.run(command, check=True)
-#        logging.info(f"Successfully converted {src_file} to {dest_file}.")
-#    except subprocess.CalledProcessError as e:
-#        logging.error(f"Failed to convert {src_file}. Reason: {e}")
-#        print(f"\nFailed to convert {src_file}. Check the log for details.")
+    # Resize using ImageMagick's convert and ensure non-progressive JPEG
+    resize_command = [
+        'convert',
+        art_file,
+        '-resize', '200x200',
+        '-interlace', 'none', # avoid progressive jpegs
+        art_file
+    ]
+
+
+    try:
+        subprocess.run(extract_command, check=True, timeout=10)
+        subprocess.run(resize_command, check=True, timeout=10)
+        logging.info(f"Successfully extracted and resized album art from {src_file} to {art_file}.")
+    except subprocess.TimeoutExpired:
+        logging.warning(f"Timeout expired while extracting or resizing album art from {src_file}.")
+    except subprocess.CalledProcessError as e:
+        logging.warning(f"Failed to extract or resize album art from {src_file}. Reason: {e}")
+
+
+
+
 
 def convert_flac_to_aac_direct(src_file, dest_file):
+    # Extract album art to the destination directory before conversion
+    dest_dir = os.path.dirname(dest_file)
+    extract_album_art(src_file, dest_dir)
     command = [
         'ffmpeg',
         '-i', src_file,
