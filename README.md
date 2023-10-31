@@ -57,3 +57,9 @@ This code logs information, warnings, and errors to a file called `conversion.lo
 - Conversion is only available between FLAC and AAC files
 - The AAC bitrate is set at 256 kbps
 - Artwork is resized to 200x200 pixels 
+
+## Screenshots
+
+<div align="center">
+<img src="img/screenshot.jpg" alt="Logo" class="scaled-image" />
+</div>
