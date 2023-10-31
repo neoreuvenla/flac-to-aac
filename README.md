@@ -2,12 +2,6 @@
 
 <br>
 
-<style>
-    .scaled-image {
-        width: 45%;
-        height: auto;
-    }
-</style>
 <img src="img/header.jpg" alt="Logo" class="scaled-image" />
 
 <br>
