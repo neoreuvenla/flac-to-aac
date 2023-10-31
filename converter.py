@@ -89,9 +89,8 @@ def resize_image(image_path, new_size):
 # check leafs for missing artwork 
 def artwork_missing(root_folder):
     
-    # list 
+    # check for artwork in leaf folders 
     folders_missing = []
-
     for dirpath, dirnames, filenames in os.walk(root_folder):
        
         # check if folder is a leaf
@@ -111,14 +110,14 @@ def conversion_coordination(src_folder, dest_folder):
         try:
             os.makedirs(dest_folder)
         except Exception as e:
-            logging.error(f"Failed to create directory {dest_folder}. Reason: {e}")
-            print(f"Error: Failed to create directory {dest_folder}. Exiting.")
+            logging.error(f"Failed to create directory {dest_folder}: {e}")
+            print(f"Error: Failed to create directory {dest_folder}")
             return
 
     # check destination folder is writeable
     if not os.access(dest_folder, os.W_OK):
-        logging.error(f"Destination folder {dest_folder} is not writable.")
-        print(f"Error: Destination folder {dest_folder} is not writable. Exiting.")
+        logging.error(f"Destination folder {dest_folder} is not writable")
+        print(f"Error: Destination folder {dest_folder} is not writable")
         return
 
     # list all flac paths in source folder
@@ -145,7 +144,7 @@ def conversion_coordination(src_folder, dest_folder):
             try:
                 os.makedirs(dest_dir)
             except Exception as e:
-                logging.error(f"Failed to create directory {dest_dir}. Reason: {e}")
+                logging.error(f"Failed to create directory {dest_dir}: {e}")
                 continue
 
         # append source and destination paths
@@ -206,7 +205,7 @@ if __name__ == "__main__":
             break 
 
         else:
-            # reprompt if invalid
+            # reprompt if source is invalid
             print(f"| '{src_folder}' is not a valid directory")
 
     # start conversion
