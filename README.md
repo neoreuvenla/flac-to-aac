@@ -24,12 +24,12 @@ This utility converts FLAC (Free Lossless Audio Codec) files to AAC (Advanced Au
 ## Prerequisites
 
 - **Operating System**: Intended for Linux distributions
-- **Dependencies**: `ffmpeg` and `metaflac` can be installed on Debian based distributions through:
+- **Dependencies**: Both `ffmpeg` and `metaflac` can be installed on Debian based distributions through:
 
     ```
     sudo apt-get install ffmpeg flac
     ```
-
+- **Playback:** AAC compatible music player or mobile device
 
 ## Usage
 
