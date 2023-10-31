@@ -1,59 +1,26 @@
-import os
-import subprocess
-import logging
-from tqdm import tqdm
 from concurrent.futures import ProcessPoolExecutor
+import logging
+import os
+from PIL import Image
+import subprocess
+from tqdm import tqdm
 
-# Set up logging
-logging.basicConfig(filename="conversion.log", level=logging.INFO, 
-                    format='%(asctime)s - %(levelname)s - %(message)s')
+# convert flac to aac
+def flac_conversion(src_file, dest_file):
 
-def extract_album_art(src_file, dest_dir):
-    # Define the destination path for the album art
-    art_file = os.path.join(dest_dir, 'cover.jpg')
-    
-    # Extract using metaflac
-    extract_command = [
-        'metaflac',
-        '--export-picture-to=' + art_file,
-        src_file
-    ]
-
-    # Resize using ImageMagick's convert and ensure non-progressive JPEG
-    resize_command = [
-        'convert',
-        art_file,
-        '-resize', '200x200',
-        '-interlace', 'none', # avoid progressive jpegs
-        art_file
-    ]
-
-
-    try:
-        subprocess.run(extract_command, check=True, timeout=10)
-        subprocess.run(resize_command, check=True, timeout=10)
-        logging.info(f"Successfully extracted and resized album art from {src_file} to {art_file}.")
-    except subprocess.TimeoutExpired:
-        logging.warning(f"Timeout expired while extracting or resizing album art from {src_file}.")
-    except subprocess.CalledProcessError as e:
-        logging.warning(f"Failed to extract or resize album art from {src_file}. Reason: {e}")
-
-
-
-
-
-def convert_flac_to_aac_direct(src_file, dest_file):
-    # Extract album art to the destination directory before conversion
+    # extract artwork to current folder
     dest_dir = os.path.dirname(dest_file)
-    extract_album_art(src_file, dest_dir)
-    command = [
-        'ffmpeg',
-        '-i', src_file,
-        '-vn',  # Exclude video streams
-        '-c:a', 'aac',
-        '-b:a', '256k',
+    extract_artwork(src_file, dest_dir)
+    
+    command = [ 
+        # encoding settings
+        'ffmpeg',        # executable utility
+        '-i', src_file,  # input file
+        '-vn',           # exclude artwork from conversion
+        '-c:a', 'aac',   # encoding format
+        '-b:a', '256k',  # audio bitrate in kbps
         
-        # Metadata fields to drop
+        # metadata removal
         '-metadata', 'album_artist=',
         '-metadata', 'genre=',
         '-metadata', 'comment=',
@@ -64,21 +31,88 @@ def convert_flac_to_aac_direct(src_file, dest_file):
         '-metadata', 'encoded_by=',
         '-metadata', 'lyrics=',
         
-        dest_file
-    ]
+        # file output
+        dest_file]
+
     try:
+        # spawn new process to run the command
         subprocess.run(command, check=True)
-        logging.info(f"Successfully converted {src_file} to {dest_file}.")
+
+        # successful conversion log message
+        logging.info(f"Successfully converted {src_file} to {dest_file}")
+
     except subprocess.CalledProcessError as e:
-        logging.error(f"Failed to convert {src_file}. Reason: {e}")
-        print(f"\nFailed to convert {src_file}. Check the log for details.")
+        # unsuccessful conversion log message
+        logging.error(f"Failed to convert {src_file}: {e}")
+        print(f"\nFailed to convert {src_file}")
 
+# wrapper function to facilitate parallel processing
+def conversion_wrapper(args):
+    return flac_conversion(*args)
 
-def convert_file_wrapper(args):
-    return convert_flac_to_aac_direct(*args)
+# extract flac artwork
+def extract_artwork(src_file, dest_dir):
 
+    # album artwork full path
+    art_file = os.path.join(dest_dir, 'cover.jpg')
+    
+    command = [
+        # artwork extraction
+        'metaflac',                         # executable utility
+        '--export-picture-to=' + art_file,  # extract artwork to path
+        
+        # file input
+        src_file]
 
-def convert_flac_to_aac(src_folder, dest_folder):
+    try:
+        # spawn new process to run the command with a timeout
+        subprocess.run(command, check=True, timeout=10)
+        
+        # resize the output
+        resize_image(art_file, (200, 200))
+
+        # successful extraction and resize log message
+        logging.info(f"Successfully extracted {src_file} to {art_file}")
+
+    except subprocess.CalledProcessError as e:
+        # unsuccessful extraction log message
+        logging.warning(f"Failed to extract album art from {src_file}: {e}")
+        print(f"\nFailed to extract album art from {src_file}")
+
+    except subprocess.TimeoutExpired:
+        # timeout log message
+        logging.warning(f"Timeout occured while extracting album art from {src_file}")
+        print(f"\nTimeout occured while extracting album art from {src_file}")
+
+# resize jpeg image
+def resize_image(image_path, new_size):
+
+    with Image.open(image_path) as img:
+        # resize image and save
+        img = img.resize(new_size, Image.ANTIALIAS)
+        img.save(image_path, "JPEG")
+
+# check leafs for missing artwork 
+def artwork_missing(root_folder):
+    
+    # list 
+    folders_missing = []
+
+    for dirpath, dirnames, filenames in os.walk(root_folder):
+       
+        # check if folder is a leaf
+        if not dirnames:
+           
+            # add path to list if no image found
+            if 'cover.jpg' not in filenames:
+                folders_missing.append(dirpath)
+
+    return folders_missing
+
+# coordinate parallel conversions 
+def conversion_coordinator(src_folder, dest_folder):
+
+    # 
     if not os.path.exists(dest_folder):
         try:
             os.makedirs(dest_folder)
@@ -102,6 +136,7 @@ def convert_flac_to_aac(src_folder, dest_folder):
 
     args_list = []
     for src_file in flac_files:
+
         rel_path = os.path.relpath(src_file, src_folder)
         dest_file = os.path.join(dest_folder, rel_path.replace('.flac', '.m4a'))
 
@@ -121,42 +156,87 @@ def convert_flac_to_aac(src_folder, dest_folder):
 
     # Convert each FLAC file in parallel, updating the progress bar
     with ProcessPoolExecutor() as executor:
-        list(tqdm(executor.map(convert_file_wrapper, args_list), total=len(args_list), unit="file"))
+        list(tqdm(executor.map(conversion_wrapper, args_list), total=len(args_list), unit="file"))
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+# log info warning error and critical messages
+logging.basicConfig(filename="conversion.log", 
+                    level=logging.INFO, 
+                    format='%(asctime)s - %(levelname)s - %(message)s')
+
+# main execution code
 if __name__ == "__main__":
 
-    # Add some spacing for readability
+    # header text block
     print("\n")
-
-    # Use a border for the title
     print("+" + "-"*80 + "+")
-    print("|" + "FLAC TO AAC CONVERTER".center(80) + "|")
     print("|" + " "*80 + "|")
-    print("|" + "Convert lossless FLAC files into AAC files for mobile music playback".center(80) + "|")
+    print("|" + "     ;;;;;;;;;;;;;;;;;;;".center(80) + "|")
+    print("|" + "     ;;;;;;;;;;;;;;;;;;;".center(80) + "|")
+    print("|" + "     ;                 ;".center(80) + "|")
+    print("|" + "     ;                 ;".center(80) + "|")
+    print("|" + "     ;                 ;".center(80) + "|")
+    print("|" + "     ;                 ;".center(80) + "|")
+    print("|" + "     ;                 ;".center(80) + "|")
+    print("|" + "     ;                 ;".center(80) + "|")
+    print("|" + ",;;;;;            ,;;;;;".center(80) + "|")
+    print("|" + ";;;;;;            ;;;;;;".center(80) + "|")
+    print("|" + "`;;;;'            `;;;;'".center(80) + "|")
+    print("|" + " "*80 + "|")
+    print("|" + "FLAC / AAC CONVERTER".center(80) + "|")
+    print("|" + " "*80 + "|")
     print("+" + "-"*80 + "+")
-    print("|" + "This program will recursively search through the specified directory, locating".center(80) + "|")
-    print("|" + "all FLAC files and converting them into the AAC format at a 256 kbps bit rate.".center(80) + "|")
-    print("|" + "All directory structures, meta data, and album art will be preserved".center(80) + "|")
+    print("|" + "Convert lossless FLAC files into lossy AAC files for portable playback".center(80) + "|")
+    print("|" + "Refer to github.com/neoreuvenla/flac-to-aac for more information".center(80) + "|")
     print("+" + "-"*80 + "+")
     
-    # Add some spacing for readability
-    print("\n")
+    while True:
+        # user input block
+        print("\n")
+        src_folder = input("| Enter source path, eg ~/Music/FLAC:\t  ")
+        dest_folder = input("| Enter destination path, eg ~/Music/AAC: ")
+        print("\n")
+
+        # expand home directory to full path 
+        src_folder = os.path.expanduser(src_folder)
+        dest_folder = os.path.expanduser(dest_folder)
+
+        
+        if os.path.isdir(src_folder):
+            # break loop if source is valid
+            break 
+
+        else:
+            # reprompt if invalid
+            print(f"| '{src_folder}' is not a valid directory")
+
+    # start conversion
+    conversion_coordinator(src_folder, dest_folder)
+
+    # album artwork extraction check
+    missing_covers = artwork_missing(dest_folder)
     
-    # Prompt the user for folder paths
-    src_folder = input("| Enter source path, eg ~/Music/FLAC:\t  ")
-    dest_folder = input("| Enter destination path, eg ~/Music/AAC: ")
-    
-    # Add some spacing for readability
-    print("\n")
+    if missing_covers:
+        # missing artwork detected
+        print("\nCheck log for folders missing artwork")
 
-    # Expanding the '~' character for both src_folder and dest_folder
-    src_folder = os.path.expanduser(src_folder)
-    dest_folder = os.path.expanduser(dest_folder)
-
-    # Check if the expanded src_folder is a valid directory
-    if not os.path.isdir(src_folder):
-        logging.error(f"| '{src_folder}' is not a valid directory.")
-        print(f"| '{src_folder}' is not a valid directory. Exiting.")
-        exit(1)
-
-    convert_flac_to_aac(src_folder, dest_folder)
+        for folder in missing_covers:
+            # artwork missing log message
+            logging.info(f"Missing artwork: {folder}")
+            
+    else:
+        # all artwork present log message
+        logging.info("Checked all folders have artwork")

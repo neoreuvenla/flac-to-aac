@@ -1,9 +1,14 @@
 <div align="center">
-<img src="https://img.shields.io/badge/Python-3F74A1?style=for-the-badge&logo=python&logoColor=white" alt="Python Badge" />
 
 <br>
 
-<img src="img/header.jpg" alt="Logo" />
+<style>
+    .scaled-image {
+        width: 45%;
+        height: auto;
+    }
+</style>
+<img src="img/header.jpg" alt="Logo" class="scaled-image" />
 
 <br>
 
