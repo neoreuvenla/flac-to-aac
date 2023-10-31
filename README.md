@@ -6,52 +6,54 @@
 
 <br>
 
-# FLAC to AAC Converter</div>
+# Convert lossless FLAC files into lossy AAC files</div>
 
-This utility allows users to convert FLAC (Free Lossless Audio Codec) files to AAC (Advanced Audio Codec) format. It's specifically tailored for those who want to preserve the rich quality of FLAC files but need the compatibility and smaller file sizes of AAC for mobile music playback. This converter recursively searches the specified directory, locates all FLAC files, and converts them into AAC format at a 256 kbps bit rate. All directory structures, metadata, and album art will be preserved during the conversion.
+This utility converts FLAC (Free Lossless Audio Codec) files to AAC (Advanced Audio Codec) format. While suitable for any capable device, it is primarily intended for optimised playback on devices with limited available RAM or running third party Rockbox software.
 
 ## Features
 
-- **Batch Conversion**: Convert an entire directory of FLAC files in one go.
-- **Parallel Processing**: Uses concurrent processing for faster conversion.
-- **Error Logging**: Logs errors and skips files that have already been converted.
-- **Interactive CLI**: Simple and interactive command-line interface.
+- **File Quality**: Produces AAC files at a popular 256 kbps bit rate
+- **Album Artwork**: Extracts artwork to increase processing speeds
+- **Metadata Cleaning**: Removes excessive metadata for faster file loading
+- **Batch Conversion**: Converts whole directories of files in a single operation
+- **Parallel Processing**: Utilises concurrent processing for faster conversion
+- **Easy Resume**: Skips previously converted files
+- **Error Logging**: Records information, warnings, and errors for review
+- **CLI**: Operates through a simple command line interface 
 
 ## Prerequisites
 
-You will need to have `ffmpeg` installed on your machine. If you don't have it yet, you can install it using:
+- **Operating System**: Intended for Linux distributions
+- **Dependencies**: `ffmpeg` and `metaflac` can be installed on Debian based distributions through:
 
-    sudo apt-get install ffmpeg
+    ```
+    sudo apt-get install ffmpeg flac
+    ```
 
-Or follow the official ffmpeg installation guide.
 
 ## Usage
 
-* Clone the repository:
+- **1:** Clone the repository:
 
-        git clone <repository-url>
-        cd <repository-directory>
+    ```
+    git clone https://github.com/neoreuvenla/flac-to-aac
+    cd flac-to-aac
+    ```
 
-* Run the converter:
+- **2:** Run the converter:
 
-        python3 converter.py
+    ```
+    python3 converter.py
+    ```
 
-Follow the on-screen instructions. You will be prompted to enter the source and destination directories.
-
-## Code Structure
-
-* convert_flac_to_aac_direct(src_file, dest_file): Converts a single FLAC file to AAC.
-    
-* convert_file_wrapper(args): Wrapper function for parallel processing.
-   
-* convert_flac_to_aac(src_folder, dest_folder): Recursively searches the source directory for FLAC files and converts them to AAC in the destination directory.
+- **3:** Follow prompts to enter the source and destination directories
 
 ## Logging
 
-* The script logs its actions, especially errors, to a file named conversion.log. This log file is useful for diagnosing failed conversions and understanding the script's actions.
+This code logs information, warnings, and errors to a file called `conversion.log`. This should be reviewed for diagnosing failed conversions and artwork operations.
 
 ## Limitations
 
-* This utility only supports converting from FLAC to AAC. Other formats are not supported.
-
-* The bitrate for AAC is set at 256 kbps. Adjusting this requires modifying the source code.
+- Conversion is only available between FLAC and AAC files
+- The AAC bitrate is set at 256 kbps
+- Artwork is resized to 200x200 pixels 

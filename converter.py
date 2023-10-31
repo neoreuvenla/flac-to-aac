@@ -38,9 +38,6 @@ def flac_conversion(src_file, dest_file):
         # spawn new process to run the command
         subprocess.run(command, check=True)
 
-        # successful conversion log message
-        logging.info(f"Successfully converted {src_file} to {dest_file}")
-
     except subprocess.CalledProcessError as e:
         # unsuccessful conversion log message
         logging.error(f"Failed to convert {src_file}: {e}")
@@ -70,9 +67,6 @@ def extract_artwork(src_file, dest_dir):
         
         # resize the output
         resize_image(art_file, (200, 200))
-
-        # successful extraction and resize log message
-        logging.info(f"Successfully extracted {src_file} to {art_file}")
 
     except subprocess.CalledProcessError as e:
         # unsuccessful extraction log message
@@ -110,9 +104,9 @@ def artwork_missing(root_folder):
     return folders_missing
 
 # coordinate parallel conversions 
-def conversion_coordinator(src_folder, dest_folder):
+def conversion_coordination(src_folder, dest_folder):
 
-    # 
+    # create destination folder if needed
     if not os.path.exists(dest_folder):
         try:
             os.makedirs(dest_folder)
@@ -121,29 +115,31 @@ def conversion_coordinator(src_folder, dest_folder):
             print(f"Error: Failed to create directory {dest_folder}. Exiting.")
             return
 
-    # Check if dest_folder is writable
+    # check destination folder is writeable
     if not os.access(dest_folder, os.W_OK):
         logging.error(f"Destination folder {dest_folder} is not writable.")
         print(f"Error: Destination folder {dest_folder} is not writable. Exiting.")
         return
 
-    # Collect all FLAC files first to determine total for the progress bar
+    # list all flac paths in source folder
     flac_files = []
     for dirpath, _, filenames in os.walk(src_folder):
         for filename in filenames:
             if filename.endswith('.flac'):
                 flac_files.append(os.path.join(dirpath, filename))
 
+    # list source and destination paths
     args_list = []
     for src_file in flac_files:
 
         rel_path = os.path.relpath(src_file, src_folder)
         dest_file = os.path.join(dest_folder, rel_path.replace('.flac', '.m4a'))
 
+        # skip if destination path structure already exists
         if os.path.exists(dest_file):
-            logging.info(f"Skipping {src_file} as destination file already exists.")
             continue
 
+        # check specific folder exists before file conversion
         dest_dir = os.path.dirname(dest_file)
         if not os.path.exists(dest_dir):
             try:
@@ -152,25 +148,15 @@ def conversion_coordinator(src_folder, dest_folder):
                 logging.error(f"Failed to create directory {dest_dir}. Reason: {e}")
                 continue
 
+        # append source and destination paths
         args_list.append((src_file, dest_file))
 
-    # Convert each FLAC file in parallel, updating the progress bar
+    # convert flacs in parallel
     with ProcessPoolExecutor() as executor:
-        list(tqdm(executor.map(conversion_wrapper, args_list), total=len(args_list), unit="file"))
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+        list(tqdm(                                        #  provides progress bar
+            executor.map(conversion_wrapper, args_list),  #  executed function and arguments
+            total=len(args_list),                         #  total task count 
+            unit="file"))                                 #  task unit
 
 # log info warning error and critical messages
 logging.basicConfig(filename="conversion.log", 
@@ -224,7 +210,7 @@ if __name__ == "__main__":
             print(f"| '{src_folder}' is not a valid directory")
 
     # start conversion
-    conversion_coordinator(src_folder, dest_folder)
+    conversion_coordination(src_folder, dest_folder)
 
     # album artwork extraction check
     missing_covers = artwork_missing(dest_folder)
@@ -236,7 +222,3 @@ if __name__ == "__main__":
         for folder in missing_covers:
             # artwork missing log message
             logging.info(f"Missing artwork: {folder}")
-            
-    else:
-        # all artwork present log message
-        logging.info("Checked all folders have artwork")
